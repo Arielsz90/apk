@@ -61,5 +61,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
     marginVertical: 10,
+    backgroundColor: 'white', // Fondo blanco para el input
+    color: 'black', // Texto en negro dentro del input
   },
 });
