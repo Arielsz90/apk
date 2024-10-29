@@ -48,9 +48,7 @@ export default function EmployeesScreen({ navigation }) {
   };
 
   const handleEdit = (employee) => {
-    setName(employee.name);
-    setEditingId(employee.id);
-    setShowModal(true);
+    navigation.navigate('EmployeeDetailScreen', { employee });
   };
 
   const handleDelete = async (employeeId) => {
@@ -133,7 +131,7 @@ export default function EmployeesScreen({ navigation }) {
             <Text>{item.name}</Text>
             <View style={styles.buttonsRow}>
               <TouchableOpacity onPress={() => handleEdit(item)}>
-                <Text style={styles.editButton}>Editar</Text>
+                <Text style={styles.verButton}>Ver</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDelete(item.id)}>
                 <Text style={styles.deleteButton}>Eliminar</Text>
@@ -186,7 +184,7 @@ const styles = StyleSheet.create({
   buttonsRow: {
     flexDirection: 'row',
   },
-  editButton: {
+  verButton: {
     color: 'blue',
     marginRight: 10,
   },
