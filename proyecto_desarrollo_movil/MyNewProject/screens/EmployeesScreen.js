@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, Alert, Modal } from 'react-native';
 import { db } from '../src/firebaseConfig';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { getAuth, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
@@ -9,8 +9,8 @@ export default function EmployeesScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [employees, setEmployees] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [currentPassword, setCurrentPassword] = useState(''); // Contraseña actual
-  const [email, setEmail] = useState(''); // Correo electrónico del usuario
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const fetchEmployees = async () => {
     const querySnapshot = await getDocs(collection(db, 'employees'));
@@ -22,13 +22,11 @@ export default function EmployeesScreen({ navigation }) {
     fetchEmployees();
   }, []);
 
-  // Función para agregar o actualizar empleados
   const handleSave = async () => {
     if (editingId) {
       const employeeRef = doc(db, 'employees', editingId);
       await updateDoc(employeeRef, { name });
-      
-      // Reautenticar y luego actualizar la contraseña
+
       if (password !== '') {
         try {
           await reauthenticateUser();
@@ -45,35 +43,33 @@ export default function EmployeesScreen({ navigation }) {
     setName('');
     setPassword('');
     setEditingId(null);
+    setShowModal(false);
     fetchEmployees();
   };
 
-  // Función para editar un empleado
   const handleEdit = (employee) => {
     setName(employee.name);
     setEditingId(employee.id);
+    setShowModal(true);
   };
 
-  // Función para eliminar un empleado
   const handleDelete = async (employeeId) => {
     const employeeRef = doc(db, 'employees', employeeId);
     await deleteDoc(employeeRef);
     fetchEmployees();
   };
 
-  // Reautenticación del usuario
   const reauthenticateUser = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (user && currentPassword) {
-      const credential = EmailAuthProvider.credential(user.email, currentPassword); // Contraseña actual
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
       return reauthenticateWithCredential(user, credential);
     } else {
       throw new Error('Faltan credenciales de autenticación');
     }
   };
 
-  // Función para cerrar sesión
   const handleLogout = () => {
     const auth = getAuth();
     signOut(auth).then(() => {
@@ -85,27 +81,49 @@ export default function EmployeesScreen({ navigation }) {
     <View style={styles.container}>
       <Image source={require('../assets/battaglia.jpg')} style={styles.backgroundImage} />
       <Text style={styles.title}>Lista de Empleados</Text>
-      <TextInput
-        placeholder="Nombre del empleado"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Contraseña actual"
-        value={currentPassword}
-        onChangeText={setCurrentPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Nueva contraseña"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-      <Button title={editingId ? 'Actualizar Empleado' : 'Agregar Empleado'} onPress={handleSave} />
+
+      <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
+        <Text style={styles.buttonText}>Agregar Empleado</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={showModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{editingId ? 'Editar Empleado' : 'Agregar Empleado'}</Text>
+            <TextInput
+              placeholder="Nombre del empleado"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Contraseña actual"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Nueva contraseña"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={styles.input}
+            />
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.buttonText}>Guardar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setShowModal(false)}>
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <FlatList
         data={employees}
@@ -125,7 +143,9 @@ export default function EmployeesScreen({ navigation }) {
         )}
       />
       
-      <Button title="Cerrar sesión" onPress={handleLogout} />
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.buttonText}>Cerrar sesión</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -152,19 +172,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
     marginVertical: 10,
-    backgroundColor: 'white', // Fondo blanco para el input
-    color: 'black', // Texto en negro dentro del input
+    backgroundColor: 'white',
+    color: 'black',
   },
   employeeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 5,
-    padding: 10, // Espacio interno en cada fila de empleado
-    backgroundColor: 'white', // Fondo blanco para cada fila de empleado
-    borderRadius: 5, // Bordes redondeados opcionales
-  },
-  employeeText: {
-    color: 'black', // Color del texto de los empleados (puedes ajustarlo a blanco si lo prefieres)
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 5,
   },
   buttonsRow: {
     flexDirection: 'row',
@@ -175,5 +192,54 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     color: 'red',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  addButton: {
+    backgroundColor: '#00bfff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  saveButton: {
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cancelButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  logoutButton: {
+    backgroundColor: '#00bfff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
