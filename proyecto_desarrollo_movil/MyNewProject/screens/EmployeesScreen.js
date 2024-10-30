@@ -11,6 +11,10 @@ export default function EmployeesScreen({ navigation }) {
   const [editingId, setEditingId] = useState(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false); // Nuevo estado para el modal de detalles
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState(null); // Nuevo estado para el empleado seleccionado
 
   const fetchEmployees = async () => {
     const querySnapshot = await getDocs(collection(db, 'employees'));
@@ -25,7 +29,7 @@ export default function EmployeesScreen({ navigation }) {
   const handleSave = async () => {
     if (editingId) {
       const employeeRef = doc(db, 'employees', editingId);
-      await updateDoc(employeeRef, { name });
+      await updateDoc(employeeRef, { name, email, username }); // Actualiza también el email y el username
 
       if (password !== '') {
         try {
@@ -38,10 +42,11 @@ export default function EmployeesScreen({ navigation }) {
         }
       }
     } else {
-      await addDoc(collection(db, 'employees'), { name });
+      await addDoc(collection(db, 'employees'), { name, email, username });
     }
     setName('');
-    setPassword('');
+    setEmail('');
+    setCurrentPassword('');
     setEditingId(null);
     setShowModal(false);
     fetchEmployees();
@@ -75,6 +80,12 @@ export default function EmployeesScreen({ navigation }) {
     });
   };
 
+  // Función para abrir el modal de detalles
+  const openDetailModal = (employee) => {
+    setSelectedEmployee(employee);
+    setShowDetailModal(true);
+  };
+
   return (
     <View style={styles.container}>
       <Image source={require('../assets/battaglia.jpg')} style={styles.backgroundImage} />
@@ -94,22 +105,31 @@ export default function EmployeesScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{editingId ? 'Editar Empleado' : 'Agregar Empleado'}</Text>
             <TextInput
+              placeholder="Ingresar Email"
+              value={email}
+              onChangeText={setEmail}
+              secureTextEntry
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Ingresar Usuario"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              style={styles.input}
+            />
+            <TextInput
               placeholder="Nombre del empleado"
               value={name}
               onChangeText={setName}
               style={styles.input}
             />
             <TextInput
-              placeholder="Contraseña actual"
+              placeholder="Ingrese una contraseña"
               value={currentPassword}
               onChangeText={setCurrentPassword}
-              secureTextEntry
-              style={styles.input}
-            />
-            <TextInput
-              placeholder="Nueva contraseña"
-              value={password}
-              onChangeText={setPassword}
               secureTextEntry
               style={styles.input}
             />
@@ -123,6 +143,30 @@ export default function EmployeesScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* Modal para ver detalles del empleado */}
+      <Modal
+        visible={showDetailModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedEmployee && (
+              <>
+                <Text style={styles.modalTitle}>Detalles del Empleado</Text>
+                <Text style={styles.label}>Nombre: {selectedEmployee.name}</Text>
+                <Text style={styles.label}>Email: {selectedEmployee.email}</Text>
+                <Text style={styles.label}>Usuario: {selectedEmployee.username}</Text>
+              </>
+            )}
+            <TouchableOpacity style={styles.backButton} onPress={() => setShowDetailModal(false)}>
+              <Text style={styles.buttonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <FlatList
         data={employees}
         keyExtractor={(item) => item.id}
@@ -131,7 +175,10 @@ export default function EmployeesScreen({ navigation }) {
             <Text>{item.name}</Text>
             <View style={styles.buttonsRow}>
               <TouchableOpacity onPress={() => handleEdit(item)}>
-                <Text style={styles.verButton}>Ver</Text>
+                <Text style={styles.verButton}>Editar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => openDetailModal(item)}>
+                <Text style={styles.verButton}>Ver Detalles</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDelete(item.id)}>
                 <Text style={styles.deleteButton}>Eliminar</Text>
@@ -172,6 +219,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     backgroundColor: 'white',
     color: 'black',
+    borderRadius: 15,
   },
   employeeRow: {
     flexDirection: 'row',
@@ -230,9 +278,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutButton: {
-    backgroundColor: '#00bfff',
+    backgroundColor: 'red',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 15,
     alignItems: 'center',
     marginTop: 10,
   },

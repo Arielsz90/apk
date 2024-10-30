@@ -55,10 +55,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 28,
     textAlign: 'center',
-    color:'#000'
+    color:'#000',
   },
   input: {
     borderWidth: 1,
+    borderRadius: 20,
     padding: 10,
     marginVertical: 10,
     backgroundColor: 'white', // Fondo blanco para el input

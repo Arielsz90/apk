@@ -101,6 +101,9 @@ const EmployeeDetailScreen = ({ route, navigation }) => {
     );
 };
 
+
+
+// STYLES 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -108,6 +111,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center', // Centra verticalmente
         alignItems: 'center', // Centra horizontalmente
         backgroundColor: '#fff',
+        backgroundColor: "#005159",
+        color: "#fff",
     },
     title: {
         fontSize: 15,
@@ -115,6 +120,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         marginTop: 10,
         textAlign: "center",
+        color: "#fff",
     },
     input: {
         borderWidth: 1,
@@ -122,6 +128,9 @@ const styles = StyleSheet.create({
         padding: 2,
         marginBottom: 10,
         width: '100%', // Asegúrate de que ocupe el ancho disponible
+        textAlign: "center",
+        borderRadius: 50,
+        backgroundColor: "#fff",
     },
     saveButton: {
         backgroundColor: '#28a745',
