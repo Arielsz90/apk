@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, Alert, Modal } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, TouchableWithoutFeedback, Image, StyleSheet, Alert, Modal } from 'react-native';
 import { db } from '../src/firebaseConfig';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { getAuth, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import Svg, { Path } from 'react-native-svg';
 
 export default function EmployeesScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -86,6 +87,71 @@ export default function EmployeesScreen({ navigation }) {
     setShowDetailModal(true);
   };
 
+
+  // Iconos SVG para editar eliminar y ver
+  const ViewIcon = ({ onPress }) => {
+    return ( 
+      <TouchableOpacity onPress={onPress} style={styles.iconContainer}>
+        <Svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="black"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          width="30"
+          height="30"
+          strokeWidth="2.5"
+        >
+          <Path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+          <Path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+        </Svg>
+      </TouchableOpacity>
+    );
+  };
+  const EditIcon = ({ onPress }) => {
+    return ( 
+      <TouchableOpacity onPress={onPress} style={styles.iconContainer}>
+        <Svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="black" // Color negro
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        width="30"
+        height="30"
+        strokeWidth="2.5"
+      >
+        <Path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+        <Path d="M13.5 6.5l4 4" />
+      </Svg>
+      </TouchableOpacity>
+    );
+  };
+  const DeleteIcon = ({ onPress }) => {
+    return ( 
+      <TouchableOpacity onPress={onPress} style={styles.iconContainer}>
+        <Svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="black" // Color negro
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          width="30"
+          height="30"
+          strokeWidth="2.5"
+        >
+          <Path d="M4 7h16" />
+          <Path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+          <Path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+          <Path d="M10 12l4 4m0 -4l-4 4" />
+        </Svg>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Image source={require('../assets/battaglia.jpg')} style={styles.backgroundImage} />
@@ -150,21 +216,20 @@ export default function EmployeesScreen({ navigation }) {
         animationType="slide"
         onRequestClose={() => setShowDetailModal(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {selectedEmployee && (
-              <>
-                <Text style={styles.modalTitle}>Detalles del Empleado</Text>
-                <Text style={styles.label}>Nombre: {selectedEmployee.name}</Text>
-                <Text style={styles.label}>Email: {selectedEmployee.email}</Text>
-                <Text style={styles.label}>Usuario: {selectedEmployee.username}</Text>
-              </>
-            )}
-            <TouchableOpacity style={styles.backButton} onPress={() => setShowDetailModal(false)}>
-              <Text style={styles.buttonText}>Cerrar</Text>
-            </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={() => setShowDetailModal(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              {selectedEmployee && (
+                <>
+                  <Text style={styles.modalTitle}>Detalles del Empleado</Text>
+                  <Text style={styles.label}>Nombre: {selectedEmployee.name}</Text>
+                  <Text style={styles.label}>Email: {selectedEmployee.email}</Text>
+                  <Text style={styles.label}>Usuario: {selectedEmployee.username}</Text>
+                </>
+              )}
+            </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <FlatList
@@ -174,15 +239,9 @@ export default function EmployeesScreen({ navigation }) {
           <View style={styles.employeeRow}>
             <Text>{item.name}</Text>
             <View style={styles.buttonsRow}>
-              <TouchableOpacity onPress={() => handleEdit(item)}>
-                <Text style={styles.verButton}>Editar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => openDetailModal(item)}>
-                <Text style={styles.verButton}>Ver Detalles</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                <Text style={styles.deleteButton}>Eliminar</Text>
-              </TouchableOpacity>
+              <ViewIcon onPress={() => openDetailModal(item)}/> 
+              <EditIcon onPress={() => handleEdit(item)}/> 
+              <DeleteIcon onPress={() => handleDelete(item.id)}/> 
             </View>
           </View>
         )}
@@ -231,6 +290,10 @@ const styles = StyleSheet.create({
   },
   buttonsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    marginHorizontal: 5,
   },
   verButton: {
     color: 'blue',
