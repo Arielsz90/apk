@@ -152,12 +152,34 @@ export default function EmployeesScreen({ navigation }) {
     );
   };
 
+  // Icono + para el agregar empleado: 
+  const PlusIcon = () => {
+    return ( 
+        <Svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="white"
+          width={24} // Puedes ajustar el tamaño
+          height={24} // Puedes ajustar el tamaño
+        >
+          <Path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          />
+        </Svg>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Image source={require('../assets/battaglia.jpg')} style={styles.backgroundImage} />
       <Text style={styles.title}>Lista de Empleados</Text>
 
       <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
+        <PlusIcon />
         <Text style={styles.buttonText}>Agregar Empleado</Text>
       </TouchableOpacity>
 
@@ -174,7 +196,6 @@ export default function EmployeesScreen({ navigation }) {
               placeholder="Ingresar Email"
               value={email}
               onChangeText={setEmail}
-              secureTextEntry
               keyboardType="email-address"
               autoCapitalize="none"
               style={styles.input}
@@ -321,9 +342,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addButton: {
-    backgroundColor: '#00bfff',
+    backgroundColor: '#12b931',
     padding: 10,
     borderRadius: 5,
+    borderRadius: 10,
     alignItems: 'center',
     marginBottom: 10,
   },
