@@ -38,39 +38,6 @@ export default function EmployeesScreen({ navigation }) {
       setImage(result.assets[0].uri);
     }
   };
-  // Función para subir la imagen a Firebase Storage
-  const uploadImage = async () => {
-    if (image) {
-      const response = await fetch(image);  // Obtén la imagen en formato de blob
-      const blob = await response.blob();  // Convierte a blob
-
-      // Crea una referencia en Firebase Storage
-      const storageRef = ref(storage, `images/${Date.now()}.jpg`);  // Aquí se usa un nombre único
-
-      // Subimos el archivo
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          // Puedes agregar un progreso de subida si lo deseas
-        },
-        (error) => {
-          Alert.alert("Error", error.message);  // Muestra error en caso de fallo
-        },
-        () => {
-          // Una vez que la imagen se haya subido correctamente
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            console.log('File available at', downloadURL);
-            // Aquí puedes guardar la URL en Firestore o usarla directamente
-          });
-        }
-      );
-    } else {
-      Alert.alert("No image selected", "Please select an image to upload.");
-    }
-  };
-
 
   const fetchEmployees = async () => {
     const querySnapshot = await getDocs(collection(db, 'employees'));
