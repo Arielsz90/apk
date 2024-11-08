@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, TouchableWithoutFeedback, Image, StyleSheet, Alert, Modal } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, TouchableWithoutFeedback, Image, StyleSheet, Alert, Modal, Button } from 'react-native';
 import { db } from '../src/firebaseConfig';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Svg, { Path } from 'react-native-svg';
+
+{/** Importaciones para la imagen */}
+import * as ImagePicker from 'expo-image-picker';
+import profileimage from "../assets/profile-placeholder.png";
+import { storage } from '../src/firebaseConfig';
+
 
 export default function EmployeesScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -14,6 +20,56 @@ export default function EmployeesScreen({ navigation }) {
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false); // Nuevo estado para el modal de detalles
   const [selectedEmployee, setSelectedEmployee] = useState(null); // Nuevo estado para el empleado seleccionado
+  const [image, setImage] = useState(profileimage);
+
+  
+  const pickImage = async () => {
+    // No permissions request is necessary for launching the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+  // Función para subir la imagen a Firebase Storage
+  const uploadImage = async () => {
+    if (image) {
+      const response = await fetch(image);  // Obtén la imagen en formato de blob
+      const blob = await response.blob();  // Convierte a blob
+
+      // Crea una referencia en Firebase Storage
+      const storageRef = ref(storage, `images/${Date.now()}.jpg`);  // Aquí se usa un nombre único
+
+      // Subimos el archivo
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          // Puedes agregar un progreso de subida si lo deseas
+        },
+        (error) => {
+          Alert.alert("Error", error.message);  // Muestra error en caso de fallo
+        },
+        () => {
+          // Una vez que la imagen se haya subido correctamente
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            console.log('File available at', downloadURL);
+            // Aquí puedes guardar la URL en Firestore o usarla directamente
+          });
+        }
+      );
+    } else {
+      Alert.alert("No image selected", "Please select an image to upload.");
+    }
+  };
 
 
   const fetchEmployees = async () => {
@@ -219,7 +275,8 @@ export default function EmployeesScreen({ navigation }) {
           </View>
         )}
       />
-      
+      <Button title="Agregar Imagen" onPress={pickImage} />
+      {image && <Image source={typeof image === 'string' ? { uri: image } : image} style={styles.image} />}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.buttonText}>Cerrar sesión</Text>
       </TouchableOpacity>
@@ -232,6 +289,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+// IMAGEN 
+  image: {   
+    width: 100,          // Ancho de la imagen
+    height: 100,         // Alto de la imagen
+    borderRadius: 50,    // Hace que la imagen sea redonda
+    borderWidth: 2,      // Borde alrededor de la imagen
+    borderColor: '#ccc', // Color del borde
+    margin: 10,          // Espacio alrededor de la imagen
   },
   backgroundImage: {
     position: 'absolute',
