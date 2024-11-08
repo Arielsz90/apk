@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, TouchableWithoutFeedback, Image, StyleSheet, Alert, Modal } from 'react-native';
 import { db } from '../src/firebaseConfig';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { getAuth, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { getAuth, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Svg, { Path } from 'react-native-svg';
 
 export default function EmployeesScreen({ navigation }) {
   const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [employees, setEmployees] = useState([]);
-  const [editingId, setEditingId] = useState(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false); // Nuevo estado para el modal de detalles
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null); // Nuevo estado para el empleado seleccionado
+
 
   const fetchEmployees = async () => {
     const querySnapshot = await getDocs(collection(db, 'employees'));
@@ -27,51 +26,48 @@ export default function EmployeesScreen({ navigation }) {
     fetchEmployees();
   }, []);
 
-  const handleSave = async () => {
-    if (editingId) {
-      const employeeRef = doc(db, 'employees', editingId);
-      await updateDoc(employeeRef, { name, email, username }); // Actualiza también el email y el username
 
-      if (password !== '') {
-        try {
-          await reauthenticateUser();
-          await updatePassword(getAuth().currentUser, password);
-          Alert.alert('Contraseña actualizada correctamente');
-        } catch (error) {
-          console.error('Error al actualizar la contraseña:', error);
-          Alert.alert('Error', 'La contraseña actual no es válida. Por favor, inténtalo de nuevo.');
-        }
-      }
-    } else {
-      await addDoc(collection(db, 'employees'), { name, email, username });
+  const handleSave = async () => {
+    // Obtener la referencia de autenticación
+    const auth = getAuth(); 
+    try {
+      // Crear usuario en Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, currentPassword);
+      const user = userCredential.user; // Obtienes el UID del usuario creado
+
+      // Añadir empleado al firestore
+      await addDoc(collection(db, 'employees'), {
+        name,
+        userId: user.uid,
+        email,
+        createdAt: new Date().toISOString(),
+      });
+  
+      // Limpiar campos después de guardar.
+      setName('');
+      setEmail('');
+      setCurrentPassword('');
+      setShowModal(false);
+  
+      // Recargar lista de empleados.
+      await fetchEmployees();
+      Alert.alert('Éxito', 'Empleado agregado correctamente');
+    } catch (error) {
+      console.error('Error saving employee:', error);
+      Alert.alert('Error', 'Hubo un problema al agregar el empleado: ' + error.message);
     }
-    setName('');
-    setEmail('');
-    setCurrentPassword('');
-    setEditingId(null);
-    setShowModal(false);
-    fetchEmployees();
   };
 
   const handleEdit = (employee) => {
-    navigation.navigate('EmployeeDetailScreen', { employee });
+    navigation.navigate('EmpleadoDetalle', { employee });
   };
 
+
+{/* Importate añadir al momento de eliminar un empleado se borre tambien su cuenta. */}
   const handleDelete = async (employeeId) => {
     const employeeRef = doc(db, 'employees', employeeId);
     await deleteDoc(employeeRef);
     fetchEmployees();
-  };
-
-  const reauthenticateUser = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (user && currentPassword) {
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      return reauthenticateWithCredential(user, credential);
-    } else {
-      throw new Error('Faltan credenciales de autenticación');
-    }
   };
 
   const handleLogout = () => {
@@ -86,7 +82,6 @@ export default function EmployeesScreen({ navigation }) {
     setSelectedEmployee(employee);
     setShowDetailModal(true);
   };
-
 
   // Iconos SVG para editar eliminar y ver
   const ViewIcon = ({ onPress }) => {
@@ -152,37 +147,16 @@ export default function EmployeesScreen({ navigation }) {
     );
   };
 
-  // Icono + para el agregar empleado: 
-  const PlusIcon = () => {
-    return ( 
-        <Svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="white"
-          width={24} // Puedes ajustar el tamaño
-          height={24} // Puedes ajustar el tamaño
-        >
-          <Path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-          />
-        </Svg>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <Image source={require('../assets/battaglia.jpg')} style={styles.backgroundImage} />
       <Text style={styles.title}>Lista de Empleados</Text>
 
       <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
-        <PlusIcon />
         <Text style={styles.buttonText}>Agregar Empleado</Text>
       </TouchableOpacity>
 
+      {/* Modal para Agregar empleado*/}
       <Modal
         visible={showModal}
         transparent={true}
@@ -191,33 +165,11 @@ export default function EmployeesScreen({ navigation }) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{editingId ? 'Editar Empleado' : 'Agregar Empleado'}</Text>
-            <TextInput
-              placeholder="Ingresar Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-            />
-            <TextInput
-              placeholder="Ingresar Usuario"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              style={styles.input}
-            />
-            <TextInput
-              placeholder="Nombre del empleado"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-            />
-            <TextInput
-              placeholder="Ingrese una contraseña"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
+            <Text style={styles.modalTitle}>Agregar Empleado</Text>
+            
+            <TextInput placeholder="Correo electrónico" value={email} onChangeText={setEmail} style={styles.input} />
+            <TextInput placeholder="Nombre del empleado" value={name} onChangeText={setName} style={styles.input} />
+            <TextInput placeholder="Contraseña" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry
               style={styles.input}
             />
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -229,8 +181,8 @@ export default function EmployeesScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-
       {/* Modal para ver detalles del empleado */}
+
       <Modal
         visible={showDetailModal}
         transparent={true}
@@ -245,7 +197,7 @@ export default function EmployeesScreen({ navigation }) {
                   <Text style={styles.modalTitle}>Detalles del Empleado</Text>
                   <Text style={styles.label}>Nombre: {selectedEmployee.name}</Text>
                   <Text style={styles.label}>Email: {selectedEmployee.email}</Text>
-                  <Text style={styles.label}>Usuario: {selectedEmployee.username}</Text>
+                  <Text style={styles.label}>User ID: {selectedEmployee.userId}</Text>
                 </>
               )}
             </View>
@@ -275,6 +227,7 @@ export default function EmployeesScreen({ navigation }) {
   );
 }
 
+{/* Estilos para esta pagina */}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -299,7 +252,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     backgroundColor: 'white',
     color: 'black',
-    borderRadius: 15,
   },
   employeeRow: {
     flexDirection: 'row',
@@ -311,12 +263,8 @@ const styles = StyleSheet.create({
   },
   buttonsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
-  iconContainer: {
-    marginHorizontal: 5,
-  },
-  verButton: {
+  editButton: {
     color: 'blue',
     marginRight: 10,
   },
@@ -342,10 +290,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addButton: {
-    backgroundColor: '#12b931',
+    backgroundColor: '#00bfff',
     padding: 10,
     borderRadius: 5,
-    borderRadius: 10,
     alignItems: 'center',
     marginBottom: 10,
   },
@@ -363,9 +310,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#00bfff',
     padding: 10,
-    borderRadius: 15,
+    borderRadius: 5,
     alignItems: 'center',
     marginTop: 10,
   },
