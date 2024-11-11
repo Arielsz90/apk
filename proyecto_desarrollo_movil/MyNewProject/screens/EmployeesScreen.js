@@ -9,7 +9,6 @@ import Svg, { Path } from 'react-native-svg';
 {/** Importaciones para la imagen */}
 import * as ImagePicker from 'expo-image-picker';
 import profileimage from "../assets/profile-placeholder.png";
-import { storage } from '../src/firebaseConfig';
 
 
 export default function EmployeesScreen({ navigation }) {
@@ -71,6 +70,7 @@ export default function EmployeesScreen({ navigation }) {
       setEmail('');
       setCurrentPassword('');
       setShowModal(false);
+      setImage(profileimage)
   
       // Recargar lista de empleados.
       await fetchEmployees();
@@ -83,6 +83,10 @@ export default function EmployeesScreen({ navigation }) {
 
   const handleEdit = (employee) => {
     navigation.navigate('EmpleadoDetalle', { employee });
+  };
+
+  const SubirImagen = () => {
+    navigation.navigate("SubirImagen");
   };
 
 
@@ -189,7 +193,8 @@ export default function EmployeesScreen({ navigation }) {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Agregar Empleado</Text>
-            
+            {image && <Image source={typeof image === 'string' ? { uri: image } : image} style={styles.image} />}
+            <Button title="Agregar Imagen" onPress={pickImage} />
             <TextInput placeholder="Correo electrónico" value={email} onChangeText={setEmail} style={styles.input} />
             <TextInput placeholder="Nombre del empleado" value={name} onChangeText={setName} style={styles.input} />
             <TextInput placeholder="Contraseña" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry
@@ -205,7 +210,6 @@ export default function EmployeesScreen({ navigation }) {
         </View>
       </Modal>
       {/* Modal para ver detalles del empleado */}
-
       <Modal
         visible={showDetailModal}
         transparent={true}
@@ -233,7 +237,13 @@ export default function EmployeesScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.employeeRow}>
-            <Text>{item.name}</Text>
+            <View style={styles.employeeInfo}>
+              <Image 
+                source={item.imageUrl ? { uri: item.imageUrl } : profileimage} 
+                style={styles.profileImage} 
+              />
+              <Text>{item.name}</Text>
+            </View>
             <View style={styles.buttonsRow}>
               <ViewIcon onPress={() => openDetailModal(item)}/> 
               <EditIcon onPress={() => handleEdit(item)}/> 
@@ -242,10 +252,11 @@ export default function EmployeesScreen({ navigation }) {
           </View>
         )}
       />
-      <Button title="Agregar Imagen" onPress={pickImage} />
-      {image && <Image source={typeof image === 'string' ? { uri: image } : image} style={styles.image} />}
+      
+      <Button title="Subir Imagen" onPress={SubirImagen} />
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.buttonText}>Cerrar sesión</Text>
+
       </TouchableOpacity>
     </View>
   );
@@ -265,6 +276,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,      // Borde alrededor de la imagen
     borderColor: '#ccc', // Color del borde
     margin: 10,          // Espacio alrededor de la imagen
+  },
+  employeeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20, // Hace la imagen circular
+    marginRight: 10,
   },
   backgroundImage: {
     position: 'absolute',

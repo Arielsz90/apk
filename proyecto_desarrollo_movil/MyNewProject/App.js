@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EmployeesScreen from './screens/EmployeesScreen';
 import Login from './screens/Login'; // Asegúrate de crear este archivo
 import EmployeeDetailScreen from "./screens/EmployeeDetailScreen";
+import SubirImagenScreen from './screens/SubirImagenScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -11,9 +12,10 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
-        <Stack.Screen name="Login" component={Login} />
+        {/** <Stack.Screen name="Login" component={Login} />*/}
         <Stack.Screen name="Empleados" component={EmployeesScreen} />
         <Stack.Screen name="EmpleadoDetalle" component={EmployeeDetailScreen} />
+        <Stack.Screen name="SubirImagen" component={SubirImagenScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
